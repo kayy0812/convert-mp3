@@ -7,25 +7,24 @@ router.get('/mp3', async (req, res, next) => {
 	if (req.query.url) return next();
 	res.send("No data");
 }, async function(req, res) {
-	const {
-		player_response: {
-			videoDetails: {
-				title
-			},
-		},
-	} = await ytdl.getBasicInfo(req.query.url);
-
 	const file = ytdl(req.query.url, {
 		quality: 'highestaudio'
 	});
-	res.setHeader(
-		'Content-Disposition',
-		contentDisposition(title + '.mp3')
-	);
+
 	file.pipe(res);
-	file.on('end', () => {
-		console.log('Xong');
-	})
+	file.once('info', (info, format) => {
+		const {
+			player_response: {
+				videoDetails
+			}
+		} = info;
+
+		res.set({
+			'Content-Disposition': contentDisposition(`${videoDetails.title}.mp3`),
+			'Content-Type': format.mimeType,
+			'Content-Length': format.contentLength
+		});
+	});
 });
 
 export default router;
